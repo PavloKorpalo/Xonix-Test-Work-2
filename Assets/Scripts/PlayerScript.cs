@@ -14,13 +14,16 @@ public class PlayerScript : MonoBehaviour
     [SerializeField] private Vector2Int _gridPosition;
     [SerializeField] private float _speed;
     [SerializeField] private float _spawnDelay;
+    [SerializeField] private float _gap;
     [SerializeField] private int _someNumber;
     [SerializeField] private bool _isMoving;
     private bool _isWallDestroyed;
     private float _timeSpawn;
+    private float _deltaX;
+    private float _deltaY;
 
-    
-    
+
+
 
     private void Awake()
     {
@@ -102,13 +105,14 @@ public class PlayerScript : MonoBehaviour
         }
     }
 
-    private void FindCornerWall(string tag)
+    private void FillWall(string tag)
     {
-        Vector2 cornerWall = new Vector2(0,0);
-       
+        Vector2 cornerWall = new Vector2(0,0);      
         Vector2 wallDeltaX = new Vector2(0,0);
         Vector2 wallDeltaY = new Vector2(0,0);
         var Magnitude = (_lastPosition + _startPosition)/2;
+        _deltaX = _lastPosition.x - _startPosition.x;
+        _deltaY = _lastPosition.y - _startPosition.y;
         Debug.Log("Magnitude:" + Magnitude);
         
         GameObject[] walls = GameObject.FindGameObjectsWithTag(tag);
@@ -125,13 +129,37 @@ public class PlayerScript : MonoBehaviour
 
 
                     Debug.Log("Corner Wall:" + cornerWall);
-                    wallDeltaX.x = (cornerWall.x + _lastPosition.x)/5;
-                    wallDeltaY.y = (cornerWall.y + _startPosition.y)/5;
+                    if(_lastPosition.x == cornerWall.x && _startPosition.y == cornerWall.y)
+                    {
+                        wallDeltaX.x = Mathf.Abs(_startPosition.x - cornerWall.x);
+                        wallDeltaY.y = Mathf.Abs(cornerWall.y - _lastPosition.y);
+                    }
+                    else
+                    {
+                        wallDeltaX.x = Mathf.Abs(_lastPosition.x - cornerWall.x);
+                        wallDeltaY.y = Mathf.Abs(cornerWall.y - _startPosition.y);
+                    }
+                   
+                   /* if(_deltaX <= 10) 
+                    {
+                        Magnitude = (cornerWall + _startPosition) / 2;
+                        wallDeltaX.x = Mathf.Abs(_lastPosition.x - _startPosition.x);
+                        wallDeltaY.y = Mathf.Abs(_lastPosition.y - cornerWall.y);
+                    }
+                    else if(_deltaY <= 10)
+                    {
+                        Magnitude = (cornerWall + _lastPosition) / 2;
+                        wallDeltaX.x = Mathf.Abs(_startPosition.x - _lastPosition.x);
+                        wallDeltaY.y = Mathf.Abs(_startPosition.y - cornerWall.y);
+                    }
+                    */
                     _texture.localScale = new Vector2(wallDeltaX.x, wallDeltaY.y);
                     Debug.Log("Scale: " + _texture.localScale);
 
 
                 }
+                
+             
               
                
 
@@ -144,14 +172,24 @@ public class PlayerScript : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.tag == "Boundaries")
+
+      
+
+        if (collision.CompareTag("Boundaries"))
         {
+            if(collision.CompareTag("Boundaries") && collision.tag == "WallFill")
+            {
+                Physics2D.IgnoreLayerCollision(8, 10);
+
+            }
+            
             _isMoving = false;
             _isWallDestroyed = true;
-            _lastPosition = _player.transform.position;
+            _lastPosition = _player.transform.position;// + new Vector3(10, 10, 0);
             Debug.Log("Last position:" + _lastPosition);
-            FindCornerWall("Wall");
+            FillWall("Wall");
             DestroyAll("Wall");
+
         }
         
 
@@ -163,7 +201,7 @@ public class PlayerScript : MonoBehaviour
         {
             _isMoving = true;
             _isWallDestroyed = false;
-            _startPosition = _player.transform.position;
+            _startPosition = _player.transform.position;// - new Vector3(10,10,0);
             Debug.Log("Start Position:" + _startPosition);
             
         }
